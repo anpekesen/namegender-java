@@ -22,8 +22,15 @@ Until the Maven Central namespace is verified, install the tagged release throug
 ```java
 var client = new NameGender(System.getenv("NAMEGENDER_API_KEY"));
 var result = client.name("Ayşe", "TR");
-System.out.println(result.gender());
+System.out.println(result.gender() + " " + result.probability() + "% · sample " + result.sampleSize());
 ```
+
+A `Result` has `query()`, `name()`, `gender()`, `country()`, `probability()`,
+`sampleSize()`, `tookMs()`, `source()`, `confidence()` and `matchedAs()`, plus
+`creditsCharged()`, `creditsRemaining()`, `dataVersion()` and `requestId()`.
+Success is the HTTP status: a non-2xx response throws `NameGenderException`,
+whose `status()` is the HTTP status and whose message is the raw error body
+(`{"error", "message", "request_id", "docs"}`).
 
 ## Country distribution
 

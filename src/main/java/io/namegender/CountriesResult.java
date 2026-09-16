@@ -12,9 +12,13 @@ import java.util.List;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CountriesResult(
-  boolean status,
   String name,
   CountriesBasis basis,
   List<CountryRegistration> registrations,
-  @JsonProperty("attested_in") List<String> attestedIn
+  @JsonProperty("attested_in") List<String> attestedIn,
+  @JsonProperty("took_ms") int tookMs,
+  @JsonProperty("credits_charged") int creditsCharged,
+  @JsonProperty("credits_remaining") int creditsRemaining,
+  @JsonProperty("data_version") String dataVersion,
+  @JsonProperty("request_id") String requestId
 ) {}
