@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.3.0</version>
+  <version>v0.4.0</version>
 </dependency>
 ```
 
@@ -24,6 +24,31 @@ var client = new NameGender(System.getenv("NAMEGENDER_API_KEY"));
 var result = client.name("Ayşe", "TR");
 System.out.println(result.gender() + " " + result.probability() + "% · sample " + result.sampleSize());
 ```
+
+## Options
+
+`name`, `email`, `username` and `bulk` also take an `Options` value. It is
+immutable, so every call returns a new one:
+
+```java
+var result = client.name("Andrea", Options.none().country("IT").bestGuess(true));
+var many = client.bulk(List.of("Ayşe", "Mehmet"), Options.none().aiFallback(true));
+```
+
+- `country(String)`: a two-letter ISO code; the answer is weighted by that country's data.
+- `bestGuess(boolean)`: return the likelier gender instead of `unknown` below the confidence threshold.
+- `aiFallback(boolean)`: ask a language model when the name is not in the dataset.
+  The account must give AI consent in the dashboard first, otherwise the API
+  answers 422 `ai_consent_required`.
+
+## Account
+
+```java
+var account = client.account(); // costs no credits
+System.out.println(account.creditsRemaining() + " credits, " + account.freeToday() + " free today");
+```
+
+## Results
 
 A `Result` has `query()`, `name()`, `gender()`, `country()`, `probability()`,
 `sampleSize()`, `tookMs()`, `source()`, `confidence()` and `matchedAs()`, plus
