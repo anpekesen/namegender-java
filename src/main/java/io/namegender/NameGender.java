@@ -25,6 +25,9 @@ public final class NameGender {
     String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
     return parse(post("/gender/bulk", "{\"names\":["+values+"]"+optionalCountry(country)+"}"), BulkResult.class);
   }
+  public CountriesResult countries(String name, Integer limit) {
+    return parse(post("/gender/countries", "{\"name\":"+quote(name)+(limit == null ? "" : ",\"limit\":"+limit)+"}"), CountriesResult.class);
+  }
   private <T> T parse(String body, Class<T> type) {
     try { return json.readValue(body, type); }
     catch (JsonProcessingException e) { throw new NameGenderException("NameGender returned invalid JSON", 0); }
