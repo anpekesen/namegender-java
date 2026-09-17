@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.4.0</version>
+  <version>v0.4.1</version>
 </dependency>
 ```
 
@@ -50,7 +50,7 @@ System.out.println(account.creditsRemaining() + " credits, " + account.freeToday
 
 ## Results
 
-A `Result` has `query()`, `name()`, `gender()`, `country()`, `probability()`,
+A `Result` has `query()`, `name()`, `firstName()`, `middleName()`, `lastName()`, `nameType()`, `gender()`, `country()`, `probability()`,
 `sampleSize()`, `tookMs()`, `source()`, `confidence()` and `matchedAs()`, plus
 `creditsCharged()`, `creditsRemaining()`, `dataVersion()` and `requestId()`.
 Success is the HTTP status: a non-2xx response throws `NameGenderException`,
