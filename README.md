@@ -69,3 +69,78 @@ var dist = client.countries("Mehmet", 10); // limit: 1-100, null for the server 
 dist.registrations().forEach(r -> System.out.println(r.country() + " " + r.share() + "%"));
 System.out.println(String.join(", ", dist.attestedIn()));
 ```
+
+## File jobs
+
+Upload a CSV or XLSX file (up to 100 MB and 1,000,000 rows) and get it back
+with gender columns added. One credit per row, charged only if the job
+completes.
+
+```java
+var job = client.createBatch(Path.of("customers.csv"),   // or (byte[] content, "customers.csv", options)
+  BatchOptions.none()
+    .nameColumn("first_name")      // required to start
+    .countryColumn("country"));    // optional: a country code per row
+
+var done = client.waitBatch(job.id(), Duration.ofHours(1), j -> System.out.println(j.progress()));
+if (done.status().equals("failed")) throw new IllegalStateException(done.error().code());
+
+client.downloadBatch(done.id(), Path.of("customers-gender.csv"));   // or downloadBatch(id) for the bytes
+```
+
+`nameColumn` is required to start: a guessed column that turns out to be
+wrong would spend credits on the wrong data. To see the columns and the cost
+first, upload with `start(false)`, read `job.inspection()`, then call
+`client.startBatch(job.id(), BatchOptions.none().nameColumn(...))`.
+
+`createBatch` sends an `Idempotency-Key` and retries network errors and
+502/503/504 with the same key, so a retry never opens a second job. Pass your
+own `idempotencyKey(...)` to keep that guarantee across your own retries.
+
+`waitBatch` returns a failed job rather than throwing; branch on
+`job.error().code()`. `cancelBatch` returns the credit of a job that has not
+started, and deletes a finished one. `listBatches(limit, page)` includes jobs
+started from the dashboard. Up to three jobs can be queued or running at once;
+a fourth is refused with `429 too_many_batches`.
+
+The result appends `gender`, `probability`, `sample_size`, `country`, `source`,
+`matched_as`, `first_name`, `middle_name`, `last_name` and `name_type` to every
+row. A CSV result starts with a UTF-8 byte order mark so that Excel reads it
+correctly; skip the first three bytes, or the `﻿` character, when you
+parse it yourself.
+
+## Webhooks
+
+Add an endpoint under Webhooks in the dashboard, and NameGender sends a signed
+`POST` to it when a file job completes or fails, and when credits are about to
+run out (`credits.low`) or have run out (`credits.depleted`, checked hourly).
+`Webhooks.verify` checks the signature and the timestamp, and returns the event.
+
+```java
+// Spring: take the body as byte[], not as a parsed object. The signature
+// covers the exact bytes sent; parsing and re-serialising changes them.
+@PostMapping("/namegender")
+ResponseEntity<Void> namegender(@RequestBody byte[] body,
+                                @RequestHeader(value = "NameGender-Signature", required = false) String signature) {
+  WebhookEvent event;
+  try {
+    event = Webhooks.verify(body, signature, System.getenv("NAMEGENDER_WEBHOOK_SECRET"));
+  } catch (WebhookVerificationException e) {
+    return ResponseEntity.badRequest().build();
+  }
+
+  switch (event.type()) {
+    case "batch.completed", "batch.failed" -> queue(event.batchJob());           // the job, as getBatch() returns it
+    case "credits.low", "credits.depleted" -> alert(event.creditsAlert());
+    default -> { }                                                               // a type added later: ignore it
+  }
+  return ResponseEntity.noContent().build();
+}
+```
+
+Answer quickly and do slow work afterwards. Anything other than a 2xx within 10
+seconds is retried, up to 8 attempts over about 45 hours. Use `event.id()`
+(also the `NameGender-Event-Id` header) to ignore a delivery you have already
+handled: a retry carries the same id, and order is not guaranteed. During a
+secret rotation the header carries two `v1` signatures; either one matching is
+enough. `WebhookVerificationException` extends `NameGenderException`.
