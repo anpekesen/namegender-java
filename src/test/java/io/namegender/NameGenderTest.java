@@ -28,7 +28,7 @@ class NameGenderTest {
     "/api/v1/gender", result("Ayşe", "female"),
     "/api/v1/gender/email", result("mehmet", "male"),
     "/api/v1/gender/username", result("ayse", "female"),
-    "/api/v1/gender/bulk", "{\"results\":[" + result("Ayşe", "female") + "],\"summary\":{\"total\":1,\"identified\":1,\"unknown\":0,\"match_rate\":100},\"took_ms\":3,\"credits_charged\":1,\"credits_remaining\":98}",
+    "/api/v1/gender/bulk", "{\"results\":[" + result("Ayşe", "female") + "," + result("Acme Ltd", "unknown").replace("\"source\"", "\"name_type\":\"organization\",\"source\"") + "],\"summary\":{\"total\":1,\"identified\":1,\"unknown\":0,\"match_rate\":100},\"took_ms\":3,\"credits_charged\":1,\"credits_remaining\":98}",
     "/api/v1/me", "{\"email\":\"dev@example.com\",\"credits_remaining\":1250,\"purchased_credits\":1150,\"free_today\":100,\"free_daily_limit\":100,\"lifetime_requests\":42,\"data_version\":\"2026.08\",\"ai\":{\"consent\":false}}"
   );
   private NameGender client;
@@ -134,6 +134,23 @@ class NameGenderTest {
     assertEquals(1250, account.creditsRemaining());
     assertEquals(100, account.freeDailyLimit());
     assertEquals("2026.08", account.dataVersion());
+  }
+
+  @Test
+  void nameTypeIsReadWhenPresentAndNullWhenAbsent() throws IOException {
+    Result organization = JSON.readValue(result("Acme Ltd", "unknown").replace("\"source\"", "\"name_type\":\"organization\",\"source\""), Result.class);
+    Result absent = JSON.readValue(result("Ayşe", "female"), Result.class);
+
+    assertEquals("organization", organization.nameType());
+    assertNull(absent.nameType());
+  }
+
+  @Test
+  void bulkResultsCarryNameType() {
+    BulkResult result = client.bulk(List.of("Ayşe", "Acme Ltd"), (String) null);
+
+    assertNull(result.results().get(0).nameType());
+    assertEquals("organization", result.results().get(1).nameType());
   }
 
   @Test

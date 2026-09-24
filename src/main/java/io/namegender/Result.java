@@ -22,6 +22,8 @@ public record Result(
   @JsonProperty("first_name") String firstName,
   @JsonProperty("middle_name") String middleName,
   @JsonProperty("last_name") String lastName,
+  /** personal, organization or role; null when the API does not say. */
+  @JsonProperty("name_type") String nameType,
   @JsonProperty("credits_charged") int creditsCharged,
   @JsonProperty("credits_remaining") int creditsRemaining,
   @JsonProperty("data_version") String dataVersion,
