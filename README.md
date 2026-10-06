@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.6.0</version>
+  <version>v0.7.0</version>
 </dependency>
 ```
 
@@ -56,6 +56,41 @@ var result = client.name("Andrea", Options.none()
   .locale(request.getLocale().toLanguageTag())
   .ip(request.getRemoteAddr()));
 ```
+
+## Salutation
+
+A ready-made greeting for a name, in the language you ask for. One credit per name.
+
+```java
+var anna = client.salutation("Dr. Anna Müller", SalutationOptions.none().language("de"));
+anna.salutation().formal();    // "Sehr geehrte Frau Dr. Müller,"
+anna.salutation().informal();  // "Liebe Anna,"
+
+var ahmet = client.salutation("Ahmet Yılmaz", SalutationOptions.none().language("tr"));
+ahmet.salutation().formal();   // "Sayın Ahmet Bey,"
+
+// First and last name stored separately: nothing is parsed
+client.salutation("Anna", "Müller", SalutationOptions.none().language("de").title("Dr."));
+
+// Up to 100 names; the options apply to every name, results come back in order
+var many = client.salutationBulk(List.of("Dr. Anna Müller", "Acme GmbH"), SalutationOptions.none().language("de"));
+many.summary().gendered();
+```
+
+When the gender is not certain, the salutation uses the neutral form
+("Guten Tag Anna Müller,") instead of guessing. `form()` is `gendered`,
+`neutral` or `organization`, and `reason()` says why it is not gendered
+(`gender_unknown`, `below_min_probability`, ...). `bestGuess` does not apply
+here; lower `minProbability(50-100)` (default 90) or pass a gender you already
+know with `gender("female")` instead.
+
+`SalutationOptions` takes `language` (en, en-US, en-GB, de, de-AT, de-CH, fr,
+es, it, pt, pt-PT, pt-BR, nl, tr, pl, ja; another value is a 422), `country`,
+`locale`, `ip`, `gender` (`male`, `female` or `neutral`), `minProbability` and
+`title` (an academic title kept in its own field, used in German and English).
+Without `language`, the language of `locale` is used, else the main language of
+the country, else English. `parts()` holds the pieces of the formal salutation
+(`opening`, `courtesy`, `academic`, `name`); any of them may be null.
 
 ## Account
 

@@ -42,6 +42,28 @@ public final class NameGender {
   public CountriesResult countries(String name, Integer limit) {
     return parse(post("/gender/countries", "{\"name\":"+quote(name)+(limit == null ? "" : ",\"limit\":"+limit)+"}"), CountriesResult.class);
   }
+  /**
+   * A ready-made salutation for a full name, titles included ("Dr. Anna Müller").
+   * One credit. The neutral form is used when the gender is not certain;
+   * {@code form()} and {@code reason()} say why.
+   */
+  public SalutationResult salutation(String name, SalutationOptions options) {
+    if (name == null) throw new IllegalArgumentException("name is required");
+    return parse(post("/salutation", "{\"name\":"+quote(name)+salutationOptions(options)+"}"), SalutationResult.class);
+  }
+  /** As {@link #salutation(String, SalutationOptions)}, for a first and last name stored separately. Nothing is parsed. */
+  public SalutationResult salutation(String firstName, String lastName, SalutationOptions options) {
+    var out = new StringBuilder();
+    if (firstName != null) out.append(",\"first_name\":").append(quote(firstName));
+    if (lastName != null) out.append(",\"last_name\":").append(quote(lastName));
+    if (out.length() == 0) throw new IllegalArgumentException("firstName or lastName is required");
+    return parse(post("/salutation", "{"+out.substring(1)+salutationOptions(options)+"}"), SalutationResult.class);
+  }
+  /** Up to 100 names in one request, answered in the order sent. One credit per name; the options apply to every name. */
+  public SalutationBulkResult salutationBulk(Collection<String> names, SalutationOptions options) {
+    String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
+    return parse(post("/salutation/bulk", "{\"names\":["+values+"]"+salutationOptions(options)+"}"), SalutationBulkResult.class);
+  }
   /** Remaining credits and today's free quota. Costs no credits. */
   public Account account() { return parse(send(request("/me").GET().build()), Account.class); }
 
@@ -234,6 +256,21 @@ public final class NameGender {
     if (options.aiFallback()) out.append(",\"ai_fallback\":true");
     if (options.bestGuess()) out.append(",\"best_guess\":true");
     return out.toString();
+  }
+  private static String salutationOptions(SalutationOptions o) {
+    if (o == null) return "";
+    var out = new StringBuilder();
+    appendText(out, "language", o.language());
+    appendText(out, "country", o.country());
+    appendText(out, "locale", o.locale());
+    appendText(out, "ip", o.ip());
+    appendText(out, "gender", o.gender());
+    if (o.minProbability() != null) out.append(",\"min_probability\":").append(o.minProbability());
+    appendText(out, "title", o.title());
+    return out.toString();
+  }
+  private static void appendText(StringBuilder out, String field, String value) {
+    if (value != null && !value.isBlank()) out.append(",\"").append(field).append("\":").append(quote(value));
   }
   // Every control character is escaped, not just \n and \r: a tab or another
   // character below U+0020 inside a name otherwise produces invalid JSON.
