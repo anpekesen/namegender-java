@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.7.0</version>
+  <version>v0.8.0</version>
 </dependency>
 ```
 
@@ -91,6 +91,35 @@ es, it, pt, pt-PT, pt-BR, nl, tr, pl, ja; another value is a 422), `country`,
 Without `language`, the language of `locale` is used, else the main language of
 the country, else English. `parts()` holds the pieces of the formal salutation
 (`opening`, `courtesy`, `academic`, `name`); any of them may be null.
+
+## Name check
+
+Whether a name typed into a form looks like a real person's name, with the
+reasons. One credit per name.
+
+```java
+var junk = client.nameCheck("asdf qwerty", NameCheckOptions.none());
+junk.assessment();  // "implausible"
+junk.score();       // 0
+junk.signals();     // keyboard_pattern on "asdf" and on "qwerty", ...
+
+client.nameCheck("Jennifer Null", NameCheckOptions.none()).assessment();  // "plausible"
+
+// First and last name stored separately: nothing is parsed
+client.nameCheck("Jennifer", "Null", NameCheckOptions.none().country("US"));
+
+// Up to 100 names; results come back in order
+var many = client.nameCheckBulk(List.of("Jennifer Null", "asdf qwerty"), NameCheckOptions.none());
+many.summary().implausible();
+```
+
+`assessment()` is `plausible`, `suspicious` or `implausible`, `score()` runs
+from 0 to 100, and each signal has a `code()` (`keyboard_pattern`,
+`placeholder`, `contains_digits`, `first_name_not_found`, ...), a `severity()`
+and the `part()` and `value()` it is about. It never calls a name fake: use it
+to flag records for a look, not to reject people automatically. Surnames are
+judged by their shape only. `NameCheckOptions` takes `country`, `locale` and
+`ip`.
 
 ## Account
 

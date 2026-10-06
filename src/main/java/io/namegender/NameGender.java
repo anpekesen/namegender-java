@@ -64,6 +64,27 @@ public final class NameGender {
     String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
     return parse(post("/salutation/bulk", "{\"names\":["+values+"]"+salutationOptions(options)+"}"), SalutationBulkResult.class);
   }
+  /**
+   * Whether a full name typed into a form looks like a real person's name, with the reasons.
+   * One credit. It never calls a name fake: use it to flag records, not to reject people.
+   */
+  public NameCheckResult nameCheck(String name, NameCheckOptions options) {
+    if (name == null) throw new IllegalArgumentException("name is required");
+    return parse(post("/name-check", "{\"name\":"+quote(name)+nameCheckOptions(options)+"}"), NameCheckResult.class);
+  }
+  /** As {@link #nameCheck(String, NameCheckOptions)}, for a first and last name stored separately. Nothing is parsed. */
+  public NameCheckResult nameCheck(String firstName, String lastName, NameCheckOptions options) {
+    var out = new StringBuilder();
+    if (firstName != null) out.append(",\"first_name\":").append(quote(firstName));
+    if (lastName != null) out.append(",\"last_name\":").append(quote(lastName));
+    if (out.length() == 0) throw new IllegalArgumentException("firstName or lastName is required");
+    return parse(post("/name-check", "{"+out.substring(1)+nameCheckOptions(options)+"}"), NameCheckResult.class);
+  }
+  /** Up to 100 names in one request, answered in the order sent. One credit per name; the options apply to every name. */
+  public NameCheckBulkResult nameCheckBulk(Collection<String> names, NameCheckOptions options) {
+    String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
+    return parse(post("/name-check/bulk", "{\"names\":["+values+"]"+nameCheckOptions(options)+"}"), NameCheckBulkResult.class);
+  }
   /** Remaining credits and today's free quota. Costs no credits. */
   public Account account() { return parse(send(request("/me").GET().build()), Account.class); }
 
@@ -267,6 +288,14 @@ public final class NameGender {
     appendText(out, "gender", o.gender());
     if (o.minProbability() != null) out.append(",\"min_probability\":").append(o.minProbability());
     appendText(out, "title", o.title());
+    return out.toString();
+  }
+  private static String nameCheckOptions(NameCheckOptions o) {
+    if (o == null) return "";
+    var out = new StringBuilder();
+    appendText(out, "country", o.country());
+    appendText(out, "locale", o.locale());
+    appendText(out, "ip", o.ip());
     return out.toString();
   }
   private static void appendText(StringBuilder out, String field, String value) {
