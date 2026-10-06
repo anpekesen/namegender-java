@@ -106,6 +106,60 @@ class NameGenderTest {
   }
 
   @Test
+  void localeAndIpAreSentWhenSet() throws IOException {
+    client.name("Andrea", Options.none().locale("it-IT").ip("203.0.113.7"));
+
+    JsonNode body = lastBody();
+    assertEquals("it-IT", body.get("locale").asText());
+    assertEquals("203.0.113.7", body.get("ip").asText());
+    assertFalse(body.has("country"));
+  }
+
+  @Test
+  void localeAndIpAreLeftOutWhenUnsetOrBlank() throws IOException {
+    client.name("Andrea", Options.none().country("IT"));
+    JsonNode unset = lastBody();
+    client.email("andrea@example.com", Options.none().locale(" ").ip(""));
+    JsonNode blank = lastBody();
+
+    assertFalse(unset.has("locale"));
+    assertFalse(unset.has("ip"));
+    assertFalse(blank.has("locale"));
+    assertFalse(blank.has("ip"));
+  }
+
+  @Test
+  void bulkSendsLocaleAndIp() throws IOException {
+    client.bulk(List.of("Andrea"), Options.none().locale("pt_BR").ip("2001:db8::1"));
+
+    JsonNode body = lastBody();
+    assertEquals("pt_BR", body.get("locale").asText());
+    assertEquals("2001:db8::1", body.get("ip").asText());
+  }
+
+  @Test
+  void countrySourceIsReadWhenPresentAndNullOtherwise() throws IOException {
+    Result fromLocale = JSON.readValue(result("Andrea", "female").replace("\"source\"", "\"country_source\":\"locale\",\"source\""), Result.class);
+    Result explicitNull = JSON.readValue(result("Andrea", "female").replace("\"source\"", "\"country_source\":null,\"source\""), Result.class);
+    Result absent = JSON.readValue(result("Andrea", "female"), Result.class);
+
+    assertEquals("locale", fromLocale.countrySource());
+    assertNull(explicitNull.countrySource());
+    assertNull(absent.countrySource());
+  }
+
+  @Test
+  void bulkEnvelopeCarriesCountrySource() throws IOException {
+    BulkResult fromIp = JSON.readValue("{\"results\":[" + result("Andrea", "female")
+      + "],\"took_ms\":3,\"credits_charged\":1,\"credits_remaining\":98,\"country_source\":\"ip\"}", BulkResult.class);
+    BulkResult none = JSON.readValue("{\"results\":[],\"took_ms\":1,\"country_source\":null}", BulkResult.class);
+
+    assertEquals("ip", fromIp.countrySource());
+    assertNull(fromIp.results().get(0).countrySource()); // only the envelope carries it
+    assertNull(none.countrySource());
+  }
+
+  @Test
   void optionsAreImmutable() {
     Options base = Options.none();
     Options changed = base.bestGuess(true);

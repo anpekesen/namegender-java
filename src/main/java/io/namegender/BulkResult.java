@@ -13,5 +13,13 @@ public record BulkResult(
   @JsonProperty("credits_charged") int creditsCharged,
   @JsonProperty("credits_remaining") int creditsRemaining,
   @JsonProperty("data_version") String dataVersion,
-  @JsonProperty("request_id") String requestId
-) {}
+  @JsonProperty("request_id") String requestId,
+  /** Where the request's country came from: country, locale or ip; null when none was used. */
+  @JsonProperty("country_source") String countrySource
+) {
+  /** The 0.5 shape, without {@code countrySource}. */
+  public BulkResult(List<Result> results, Map<String, Object> summary, int tookMs, int creditsCharged,
+                    int creditsRemaining, String dataVersion, String requestId) {
+    this(results, summary, tookMs, creditsCharged, creditsRemaining, dataVersion, requestId, null);
+  }
+}

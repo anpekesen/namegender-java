@@ -27,5 +27,18 @@ public record Result(
   @JsonProperty("credits_charged") int creditsCharged,
   @JsonProperty("credits_remaining") int creditsRemaining,
   @JsonProperty("data_version") String dataVersion,
-  @JsonProperty("request_id") String requestId
-) {}
+  @JsonProperty("request_id") String requestId,
+  /**
+   * Where the country came from: country, locale or ip; null when none was used.
+   * Always null on bulk items: read {@link BulkResult#countrySource()} instead.
+   */
+  @JsonProperty("country_source") String countrySource
+) {
+  /** The 0.5 shape, without {@code countrySource}. */
+  public Result(String query, String name, String gender, String country, int probability, int sampleSize, int tookMs,
+                String confidence, String source, String matchedAs, String firstName, String middleName, String lastName,
+                String nameType, int creditsCharged, int creditsRemaining, String dataVersion, String requestId) {
+    this(query, name, gender, country, probability, sampleSize, tookMs, confidence, source, matchedAs, firstName,
+      middleName, lastName, nameType, creditsCharged, creditsRemaining, dataVersion, requestId, null);
+  }
+}

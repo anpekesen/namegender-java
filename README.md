@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.4.1</version>
+  <version>v0.6.0</version>
 </dependency>
 ```
 
@@ -36,10 +36,26 @@ var many = client.bulk(List.of("Ayşe", "Mehmet"), Options.none().aiFallback(tru
 ```
 
 - `country(String)`: a two-letter ISO code; the answer is weighted by that country's data.
+- `locale(String)`: a language tag such as `it-IT` or `pt_BR`. Its region is
+  used as the country when `country` is not set; a tag without a region (`en`) sets none.
+- `ip(String)`: the end user's IP address. Its country is used when neither
+  `country` nor a locale with a region is set. The API does not store it.
 - `bestGuess(boolean)`: return the likelier gender instead of `unknown` below the confidence threshold.
 - `aiFallback(boolean)`: ask a language model when the name is not in the dataset.
   The account must give AI consent in the dashboard first, otherwise the API
   answers 422 `ai_consent_required`.
+
+`country` wins over `locale`, which wins over `ip`. `result.countrySource()`
+says which one was used (`country`, `locale` or `ip`), or is null when none
+was. In a bulk lookup it is on the `BulkResult` itself, not on each item. `countries` and file jobs take neither
+`locale` nor `ip`.
+
+```java
+// In a servlet: the visitor's Accept-Language and address
+var result = client.name("Andrea", Options.none()
+  .locale(request.getLocale().toLanguageTag())
+  .ip(request.getRemoteAddr()));
+```
 
 ## Account
 
@@ -52,7 +68,7 @@ System.out.println(account.creditsRemaining() + " credits, " + account.freeToday
 
 A `Result` has `query()`, `name()`, `firstName()`, `middleName()`, `lastName()`, `nameType()`, `gender()`, `country()`, `probability()`,
 `sampleSize()`, `tookMs()`, `source()`, `confidence()` and `matchedAs()`, plus
-`creditsCharged()`, `creditsRemaining()`, `dataVersion()` and `requestId()`.
+`countrySource()`, `creditsCharged()`, `creditsRemaining()`, `dataVersion()` and `requestId()`.
 Success is the HTTP status: a non-2xx response throws `NameGenderException`,
 whose `status()` is the HTTP status and whose message is the raw error body
 (`{"error", "message", "request_id", "docs"}`).

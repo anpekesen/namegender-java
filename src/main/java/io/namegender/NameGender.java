@@ -229,6 +229,8 @@ public final class NameGender {
     if (options == null) return "";
     var out = new StringBuilder();
     if (options.country() != null && !options.country().isBlank()) out.append(",\"country\":").append(quote(options.country()));
+    if (options.locale() != null && !options.locale().isBlank()) out.append(",\"locale\":").append(quote(options.locale()));
+    if (options.ip() != null && !options.ip().isBlank()) out.append(",\"ip\":").append(quote(options.ip()));
     if (options.aiFallback()) out.append(",\"ai_fallback\":true");
     if (options.bestGuess()) out.append(",\"best_guess\":true");
     return out.toString();
