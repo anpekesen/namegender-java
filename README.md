@@ -15,7 +15,7 @@ Until the Maven Central namespace is verified, install the tagged release throug
 <dependency>
   <groupId>com.github.anpekesen</groupId>
   <artifactId>namegender-java</artifactId>
-  <version>v0.8.0</version>
+  <version>v0.9.0</version>
 </dependency>
 ```
 
@@ -120,6 +120,29 @@ and the `part()` and `value()` it is about. It never calls a name fake: use it
 to flag records for a look, not to reject people automatically. Surnames are
 judged by their shape only. `NameCheckOptions` takes `country`, `locale` and
 `ip`.
+
+## Age from name
+
+How old the people who carry a first name usually are, from birth records.
+One credit per name.
+
+```java
+var brittany = client.age("Brittany", AgeOptions.none());
+brittany.age();         // 36 (median)
+brittany.ageRange();    // AgeRange[low=32, high=38], the middle half
+brittany.ageRange80();  // AgeRange[low=28, high=41], the middle 80 percent
+
+// Up to 100 names; results come back in order
+var many = client.ageBulk(List.of("Brittany", "Camille"), AgeOptions.none().country("FR"));
+```
+
+It covers the US, France and Norway. For other countries `age()` is null,
+`reason()` is `country_not_covered` and no credit is charged; `not_found` and
+`insufficient_data` are the other reasons, and none of them is an error.
+Without a country hint US data is used (`countrySource()` is `default`).
+`AgeOptions` takes `gender` (`male` or `female`, which narrows the estimate to
+one gender's records), `country`, `locale` and `ip`. The answer describes a
+group, not a person: never use it for decisions about an individual.
 
 ## Account
 

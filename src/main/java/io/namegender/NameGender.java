@@ -85,6 +85,20 @@ public final class NameGender {
     String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
     return parse(post("/name-check/bulk", "{\"names\":["+values+"]"+nameCheckOptions(options)+"}"), NameCheckBulkResult.class);
   }
+  /**
+   * How old the people who carry a first name usually are: the median and two ranges, from
+   * birth records in the US, France and Norway. One credit; none when the country is not
+   * covered. It describes a group, not a person: never use it for decisions about an individual.
+   */
+  public AgeResult age(String name, AgeOptions options) {
+    if (name == null) throw new IllegalArgumentException("name is required");
+    return parse(post("/age", "{\"name\":"+quote(name)+ageOptions(options)+"}"), AgeResult.class);
+  }
+  /** Up to 100 names in one request, answered in the order sent. One credit per name; the options apply to every name. */
+  public AgeBulkResult ageBulk(Collection<String> names, AgeOptions options) {
+    String values = names.stream().map(NameGender::quote).reduce((a,b)->a+","+b).orElse("");
+    return parse(post("/age/bulk", "{\"names\":["+values+"]"+ageOptions(options)+"}"), AgeBulkResult.class);
+  }
   /** Remaining credits and today's free quota. Costs no credits. */
   public Account account() { return parse(send(request("/me").GET().build()), Account.class); }
 
@@ -293,6 +307,15 @@ public final class NameGender {
   private static String nameCheckOptions(NameCheckOptions o) {
     if (o == null) return "";
     var out = new StringBuilder();
+    appendText(out, "country", o.country());
+    appendText(out, "locale", o.locale());
+    appendText(out, "ip", o.ip());
+    return out.toString();
+  }
+  private static String ageOptions(AgeOptions o) {
+    if (o == null) return "";
+    var out = new StringBuilder();
+    appendText(out, "gender", o.gender());
     appendText(out, "country", o.country());
     appendText(out, "locale", o.locale());
     appendText(out, "ip", o.ip());
